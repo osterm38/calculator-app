@@ -1,7 +1,39 @@
 # CLAUDE.md
 
 ## Project Overview
-<!-- TODO: Describe what this project does in 2-3 sentences -->
+A Python arithmetic calculator library with a Flask-based web GUI. The core
+module (`calculator_app.calculator`) exposes individual arithmetic functions;
+the web module (`calculator_app.web`) wraps them in a REST API served
+alongside a self-contained single-page UI.
+
+## Modules
+| Module | Description |
+|---|---|
+| `calculator_app.calculator` | Pure arithmetic functions: `add`, `subtract`, `multiply`, `divide`, `power`, `sqrt` |
+| `calculator_app.web` | Flask app with `GET /` (UI) and `POST /calculate` (JSON API) |
+
+## Running the Web Server
+```bash
+# Development server (default: http://127.0.0.1:5000)
+uv run calculator-web
+
+# Custom host/port via environment variables
+HOST=0.0.0.0 PORT=8080 uv run calculator-web
+```
+
+## POST /calculate API
+```
+POST /calculate
+Content-Type: application/json
+
+{"expression": "3+4"}
+
+# Success → 200
+{"result": 7.0}
+
+# Error → 400
+{"error": "Division by zero"}
+```
 
 ## Setup
 ```bash
