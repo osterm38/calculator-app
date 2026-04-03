@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #1a1a2e;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .calculator {
+      background: #16213e;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      padding: 24px;
+      width: 320px;
+    }
+
+    .display {
+      background: #0f3460;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+
+    .display__expression {
+      color: #a8b2d8;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+      word-break: break-all;
+    }
+
+    .display__result {
+      color: #e2e8f0;
+      font-size: 2rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .display__result.error {
+      color: #fc8181;
+      font-size: 1rem;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 500;
+      padding: 18px 0;
+      transition: transform 0.08s ease, background 0.15s ease;
+    }
+
+    button:active { transform: scale(0.94); }
+
+    .btn-digit {
+      background: #1a1a2e;
+      color: #e2e8f0;
+    }
+    .btn-digit:hover { background: #2a2a4e; }
+
+    .btn-op {
+      background: #533483;
+      color: #e2e8f0;
+    }
+    .btn-op:hover { background: #6a44a8; }
+
+    .btn-clear {
+      background: #c53030;
+      color: #fff;
+    }
+    .btn-clear:hover { background: #e53e3e; }
+
+    .btn-equals {
+      background: #2b6cb0;
+      color: #fff;
+      grid-column: span 2;
+    }
+    .btn-equals:hover { background: #3182ce; }
+
+    .btn-zero { grid-column: span 2; }
+  </style>
+</head>
+<body>
+  <div class="calculator" role="main" aria-label="Calculator">
+    <div class="display" aria-live="polite">
+      <div class="display__expression" id="expression"></div>
+      <div class="display__result" id="result">0</div>
+    </div>
+
+    <div class="buttons">
+      <!-- Row 1 -->
+      <button class="btn-clear" data-action="clear" aria-label="Clear">C</button>
+      <button class="btn-op"    data-action="op"    data-value="/"  aria-label="Divide">&divide;</button>
+      <button class="btn-op"    data-action="op"    data-value="*"  aria-label="Multiply">&times;</button>
+      <button class="btn-op"    data-action="op"    data-value="-"  aria-label="Subtract">&minus;</button>
+
+      <!-- Row 2 -->
+      <button class="btn-digit" data-action="digit" data-value="7">7</button>
+      <button class="btn-digit" data-action="digit" data-value="8">8</button>
+      <button class="btn-digit" data-action="digit" data-value="9">9</button>
+      <!-- Plus spans rows 2-3 -->
+      <button class="btn-op"    data-action="op"    data-value="+"  aria-label="Add" style="grid-row: span 2;">&plus;</button>
+
+      <!-- Row 3 -->
+      <button class="btn-digit" data-action="digit" data-value="4">4</button>
+      <button class="btn-digit" data-action="digit" data-value="5">5</button>
+      <button class="btn-digit" data-action="digit" data-value="6">6</button>
+
+      <!-- Row 4 -->
+      <button class="btn-digit" data-action="digit" data-value="1">1</button>
+      <button class="btn-digit" data-action="digit" data-value="2">2</button>
+      <button class="btn-digit" data-action="digit" data-value="3">3</button>
+      <button class="btn-equals" data-action="equals" aria-label="Equals" style="grid-row: span 2;">=</button>
+
+      <!-- Row 5 -->
+      <button class="btn-digit btn-zero" data-action="digit" data-value="0">0</button>
+      <button class="btn-digit" data-action="digit" data-value=".">.</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const expressionEl = document.getElementById('expression');
+      const resultEl     = document.getElementById('result');
+
+      let currentNumber = '';   // number currently being typed
+      let operator      = null; // pending operator
+      let firstOperand  = null; // left-hand side value
+
+      function updateDisplay(expr, res, isError) {
+        expressionEl.textContent = expr;
+        resultEl.textContent     = res;
+        resultEl.classList.toggle('error', !!isError);
+      }
+
+      function clear() {
+        currentNumber = '';
+        operator      = null;
+        firstOperand  = null;
+        updateDisplay('', '0', false);
+      }
+
+      function inputDigit(value) {
+        if (value === '.' && currentNumber.includes('.')) return;
+        currentNumber += value;
+        const exprText = firstOperand !== null
+          ? `${firstOperand} ${operator} ${currentNumber}`
+          : currentNumber;
+        updateDisplay(exprText, currentNumber || '0', false);
+      }
+
+      function inputOperator(op) {
+        if (currentNumber === '' && firstOperand === null) return;
+
+        if (currentNumber !== '') {
+          firstOperand  = currentNumber;
+          currentNumber = '';
+        }
+        operator = op;
+        updateDisplay(`${firstOperand} ${op}`, firstOperand, false);
+      }
+
+      async function calculate() {
+        if (firstOperand === null || operator === null || currentNumber === '') return;
+
+        const expression = `${firstOperand}${operator}${currentNumber}`;
+        updateDisplay(expression, '...', false);
+
+        try {
+          const response = await fetch('/calculate', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ expression }),
+          });
+          const data = await response.json();
+
+          if (!response.ok || data.error) {
+            updateDisplay(expression, data.error || 'Error', true);
+          } else {
+            const result = String(data.result);
+            updateDisplay(expression + ' =', result, false);
+            // Seed the result as the next left-hand operand
+            firstOperand  = result;
+            operator      = null;
+            currentNumber = '';
+          }
+        } catch (networkError) {
+          updateDisplay(expression, 'Network error', true);
+        }
+      }
+
+      document.querySelector('.buttons').addEventListener('click', function (event) {
+        const btn = event.target.closest('button');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const value  = btn.dataset.value;
+
+        if (action === 'clear')  clear();
+        if (action === 'digit')  inputDigit(value);
+        if (action === 'op')     inputOperator(value);
+        if (action === 'equals') calculate();
+      });
+
+      document.addEventListener('keydown', function (event) {
+        const key = event.key;
+        if (key >= '0' && key <= '9') inputDigit(key);
+        else if (key === '.')          inputDigit('.');
+        else if (['+', '-', '*', '/'].includes(key)) inputOperator(key);
+        else if (key === 'Enter' || key === '=')      calculate();
+        else if (key === 'Escape' || key === 'c' || key === 'C') clear();
+      });
+    })();
+  </script>
+</body>
+</html>
